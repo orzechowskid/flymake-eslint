@@ -75,7 +75,6 @@
 
   (let ((results '()))
     (with-current-buffer report-buffer
-      (message (format "-->\n%s\n<--" (buffer-string)))
       ;; start at the top and check each line for an eslint message
       (goto-char (point-min))
       (while (not (eobp))
