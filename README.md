@@ -3,7 +3,7 @@ Flymake backend for Javascript using eslint
 
 ## Installation
 
-Download to `~/.emacs.d/lisp`, then edit `~/.emacs` or equivalent:
+Download and place inside `~/.emacs.d/lisp` then edit `~/.emacs` or equivalent:
 ```lisp
 (add-to-list 'load-path "~/.emacs.d/lisp")
 (require "flymake-eslint.el")
@@ -11,6 +11,7 @@ Download to `~/.emacs.d/lisp`, then edit `~/.emacs` or equivalent:
 
 ## Usage
 
+also in `~/.emacs` or wherever:
 ```lisp
 (add-hook 'web-mode-hook ; or whatever the mode-hook is for your mode of choice
   (lambda ()
