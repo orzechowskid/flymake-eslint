@@ -14,7 +14,7 @@
 
 ;; some useful variables
 
-(defcustom flymake-eslint-executable-name "eslint_d"
+(defcustom flymake-eslint-executable-name "eslint"
   "Name of executable to run when checker is called.  Must be present in `exec-path`."
   :type 'string
   :group 'flymake-eslint)
