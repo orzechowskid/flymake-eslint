@@ -19,11 +19,19 @@
   :type 'string
   :group 'flymake-eslint)
 
+(defcustom flymake-eslint-executable-args ""
+  "Extra arguments to pass to eslint."
+  :type 'string
+  :group 'flymake-eslint)
+
 
 ;; some internal variables
 
-(defvar flymake-eslint--filename "##flymake-eslint.js"
+(defvar flymake-eslint--filename ".##flymake-eslint.js"
   "Internal variable.  Name of the temporary file on which to run eslint.")
+
+(defvar flymake-eslint--message-regex "^[[:space:]]*\\([0-9]+\\):\\([0-9]+\\)[[:space:]]+\\(warning\\|error\\)[[:space:]]+\\(.*?\\)[[:space:]]\\{2,\\}\\(.*\\)$"
+  "Internal variable.  Regular expression definition to match eslint messages.")
 
 
 ;; some internal functions
@@ -57,9 +65,9 @@
   ;; the current buffer to a temp file and process that instead.  Use a file in the
   ;; current directory, not the system's temp directory, in case .eslintrc or other
   ;; path-sensitive tools like babel are applied to this file
-  (let* ((temp-file-name (flymake-eslint--create-temp-file-from-buffer source-buffer))
-         (process-args (format "--ignore-pattern '!%s' %s" temp-file-name temp-file-name)))
-    (call-process flymake-eslint-executable-name nil destination-buffer t process-args)))
+  ;; TODO I think that can be solved with --stdin and --stdin-filename ?
+  (let ((temp-file-name (flymake-eslint--create-temp-file-from-buffer source-buffer)))
+    (call-process flymake-eslint-executable-name nil destination-buffer t "--no-ignore" "--no-color" temp-file-name)))
 
 
 (defun flymake-eslint--report (source-buffer report-buffer flymake-report-fn)
@@ -67,19 +75,21 @@
 
   (let ((results '()))
     (with-current-buffer report-buffer
+      (message (format "-->\n%s\n<--" (buffer-string)))
       ;; start at the top and check each line for an eslint message
       (goto-char (point-min))
       (while (not (eobp))
-        (if (re-search-forward "^[[:space:]]*\\([0-9]+\\):\\([0-9]+\\)[[:space:]]+\\(warning\\|error\\)[[:space:]]+\\(.*\\)$" nil t)
+        (if (looking-at flymake-eslint--message-regex)
             (let* ((row (string-to-number (match-string 1)))
                    (column (string-to-number (match-string 2)))
                    (src-pos (flymake-diag-region source-buffer row column))
-                   (type (if (string-match "^warning" (match-string 3))
+                   (type (if (string-equal "warning" (match-string 3))
                              :warning
                            :error))
-                   (msg (match-string 4)))
+                   (msg (match-string 4))
+                   (msg-text (format "%s [%s]" msg (match-string 5))))
               ;; new Flymake diag message
-              (push (flymake-make-diagnostic source-buffer (car src-pos) (cdr src-pos) type msg) results)))
+              (push (flymake-make-diagnostic source-buffer (car src-pos) (cdr src-pos) type msg-text) results)))
         (forward-line 1))
       ;; report
       (funcall flymake-report-fn results))))
@@ -93,8 +103,8 @@
     (flymake-eslint--report source-buffer (current-buffer) flymake-report-fn)))
 
 
-(defun flymake-eslint--run (flymake-report-fn &rest ignored)
-  "Call eslint and pass results to FLYMAKE-REPORT-FN.  All other parameters are currently IGNORED."
+(defun flymake-eslint--checker (flymake-report-fn &rest ignored)
+  "Internal function.  Check for the existence of eslint on `exec-path` and run it on the current buffer if found.  Report results using FLYMAKE-REPORT-FN.  All other parameters are currently IGNORED."
 
   (flymake-eslint--ensure-binary-exists)
   (flymake-eslint--check-and-report (current-buffer) flymake-report-fn))
@@ -104,8 +114,10 @@
 
 (defun flymake-eslint-enable ()
   "Add flymake-eslint as a buffer-local Flymake backend."
+
   (interactive)
-  (add-hook 'flymake-diagnostic-functions 'flymake-eslint--run nil t))
+  (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
+
 
 (provide 'flymake-eslint)
 
