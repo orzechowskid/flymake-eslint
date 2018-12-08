@@ -30,7 +30,7 @@
 (defvar flymake-eslint--filename ".##flymake-eslint.js"
   "Internal variable.  Name of the temporary file on which to run eslint.")
 
-(defvar flymake-eslint--message-regex "^[[:space:]]*\\([0-9]+\\):\\([0-9]+\\)[[:space:]]+\\(warning\\|error\\)[[:space:]]+\\(.*?\\)[[:space:]]\\{2,\\}\\(.*\\)$"
+(defvar flymake-eslint--message-regex "^[[:space:]]*\\([0-9]+\\):\\([0-9]+\\)[[:space:]]+\\(warning\\|error\\)[[:space:]]+\\(.+?\\)[[:space:]]\\{2,\\}\\(.*\\)$"
   "Internal variable.  Regular expression definition to match eslint messages.")
 
 
@@ -78,17 +78,17 @@
       ;; start at the top and check each line for an eslint message
       (goto-char (point-min))
       (while (not (eobp))
-        (if (looking-at flymake-eslint--message-regex)
+        (when (looking-at flymake-eslint--message-regex)
             (let* ((row (string-to-number (match-string 1)))
                    (column (string-to-number (match-string 2)))
-                   (src-pos (flymake-diag-region source-buffer row column))
-                   (type (if (string-equal "warning" (match-string 3))
-                             :warning
-                           :error))
+                   (type (match-string 3))
                    (msg (match-string 4))
-                   (msg-text (format "%s [%s]" msg (match-string 5))))
+                   (lint-rule (match-string 5))
+		   (msg-text (format "%s [%s]" msg lint-rule))
+                   (type-symbol (if (string-equal "warning" type) :warning :error))
+                   (src-pos (flymake-diag-region source-buffer row column)))
               ;; new Flymake diag message
-              (push (flymake-make-diagnostic source-buffer (car src-pos) (cdr src-pos) type msg-text) results)))
+              (push (flymake-make-diagnostic source-buffer (car src-pos) (cdr src-pos) type-symbol msg-text) results)))
         (forward-line 1))
       ;; report
       (funcall flymake-report-fn results))))
