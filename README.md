@@ -23,3 +23,7 @@ also in `~/.emacs` or wherever:
 ## Customization
 
 useful variables are members of the `flymake-eslint` group and can be viewed and modified with the command `M-x customize-group [RET] flymake-eslint [RET]`.
+
+## Bugs
+
+a lot.  this isn't ready for use yet.
