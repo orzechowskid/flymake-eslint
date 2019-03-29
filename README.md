@@ -17,7 +17,6 @@ also in `~/.emacs` or wherever:
 ```lisp
 (add-hook 'web-mode-hook ; or whatever the mode-hook is for your mode of choice
   (lambda ()
-    (flymake-mode) ; or some other mode like eglot-mode which enables flymake-mode automatically
     (flymake-eslint-enable)))
 ```
 ## Customization
@@ -26,4 +25,4 @@ useful variables are members of the `flymake-eslint` group and can be viewed and
 
 ## Bugs
 
-a lot.  this isn't ready for use yet.
+yes

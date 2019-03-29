@@ -137,8 +137,9 @@ Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  A
 
 
 (defun flymake-eslint-enable ()
-  "Add flymake-eslint as a buffer-local Flymake backend."
+  "Enable `flymake-mode', and add flymake-eslint as a buffer-local Flymake backend."
   (interactive)
+  (flymake-mode t)
   (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
 
 
