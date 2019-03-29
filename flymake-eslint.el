@@ -1,4 +1,4 @@
-;;; flymake-eslint.el --- An eslint Flymake backend    -*- lexical-binding: t; -*-
+;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint --- -*- lexical-binding: t; -*-
 
 ;;; Version: 1.0.0
 
@@ -9,11 +9,11 @@
 ;;; Package-Requires: ((emacs "26.0"))
 
 ;;; Commentary:
-;; A backend for Flymake which uses eslint.  Enable flymake-mode with `M-x flymake-mode [RET]', then enable this backend with `M-x flymake-eslint-enable [RET]'.
+;; A backend for Flymake which uses eslint.  Enable it with `M-x flymake-eslint-enable [RET]'.
 ;; Alternately, configure a mode-hook for your Javascript major mode of choice:
 ;;
 ;; (add-hook 'some-js-major-mode-hook
-;;   (lambda () (flymake-mode) (flymake-eslint-enable))
+;;   (lambda () (flymake-eslint-enable))
 ;;
 ;; A handful of configurable options can be found in the `flymake-eslint' customization group: view and modify them with the command `M-x customize-group [RET] flymake-eslint [RET]'.
 
