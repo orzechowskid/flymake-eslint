@@ -64,7 +64,7 @@ Regular expression definition to match eslint messages.")
 
 (defun flymake-eslint--ensure-binary-exists ()
   "Internal function.
-Throws an error if `flymake-eslint-executable-name' can't be found on variable `exec-path'"
+Throw an error if `flymake-eslint-executable-name' can't be found on variable `exec-path'"
   (unless (executable-find flymake-eslint-executable-name)
     (error (message "can't find '%s' in exec-path - try M-x set-variable flymake-eslint-executable-name maybe?" flymake-eslint-executable-name))))
 
@@ -138,7 +138,6 @@ Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  A
 
 (defun flymake-eslint-enable ()
   "Add flymake-eslint as a buffer-local Flymake backend."
-
   (interactive)
   (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
 
