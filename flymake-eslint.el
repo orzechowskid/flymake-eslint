@@ -136,6 +136,7 @@ Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  A
 ;; module entry point
 
 
+;;;###autoload
 (defun flymake-eslint-enable ()
   "Enable Flymake and add flymake-eslint as a buffer-local Flymake backend."
   (interactive)
