@@ -1,7 +1,24 @@
-;;; flymake-eslint.el --- An eslint Flymake backend    -*- lexical-binding: t; -*-
-;;; Summary:
+;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint --- -*- lexical-binding: t; -*-
+
+;;; Version: 1.0.0
+
+;;; Author: Dan Orzechowski
+
+;;; URL: https://github.com/orzechowskid/flymake-eslint
+
+;;; Package-Requires: ((emacs "26.0"))
+
 ;;; Commentary:
+;; A backend for Flymake which uses eslint.  Enable it with `M-x flymake-eslint-enable [RET]'.
+;; Alternately, configure a mode-hook for your Javascript major mode of choice:
+;;
+;; (add-hook 'some-js-major-mode-hook
+;;   (lambda () (flymake-eslint-enable))
+;;
+;; A handful of configurable options can be found in the `flymake-eslint' customization group: view and modify them with the command `M-x customize-group [RET] flymake-eslint [RET]'.
+
 ;;; License: MIT
+
 ;;; Code:
 
 
@@ -47,7 +64,7 @@ Regular expression definition to match eslint messages.")
 
 (defun flymake-eslint--ensure-binary-exists ()
   "Internal function.
-Throws an error if `flymake-eslint-executable-name' can't be found on variable `exec-path'"
+Throw an error if `flymake-eslint-executable-name' can't be found on variable `exec-path'"
   (unless (executable-find flymake-eslint-executable-name)
     (error (message "can't find '%s' in exec-path - try M-x set-variable flymake-eslint-executable-name maybe?" flymake-eslint-executable-name))))
 
@@ -120,9 +137,9 @@ Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  A
 
 
 (defun flymake-eslint-enable ()
-  "Add flymake-eslint as a buffer-local Flymake backend."
-
+  "Enable `flymake-mode', and add flymake-eslint as a buffer-local Flymake backend."
   (interactive)
+  (flymake-mode t)
   (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
 
 
