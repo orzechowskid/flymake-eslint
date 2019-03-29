@@ -1,7 +1,24 @@
 ;;; flymake-eslint.el --- An eslint Flymake backend    -*- lexical-binding: t; -*-
-;;; Summary:
+
+;;; Version: 1.0.0
+
+;;; Author: Dan Orzechowski
+
+;;; URL: https://github.com/orzechowskid/flymake-eslint
+
+;;; Package-Requires: ((emacs "26.0"))
+
 ;;; Commentary:
+;; A backend for Flymake which uses eslint.  Enable flymake-mode with `M-x flymake-mode [RET]', then enable this backend with `M-x flymake-eslint-enable [RET]'.
+;; Alternately, configure a mode-hook for your Javascript major mode of choice:
+;;
+;; (add-hook 'some-js-major-mode-hook
+;;   (lambda () (flymake-mode) (flymake-eslint-enable))
+;;
+;; A handful of configurable options can be found in the `flymake-eslint' customization group: view and modify them with the command `M-x customize-group [RET] flymake-eslint [RET]'.
+
 ;;; License: MIT
+
 ;;; Code:
 
 
@@ -17,7 +34,7 @@
 ;; useful variables
 
 
-(defcustom flymake-eslint-executable-name "eslint_d"
+(defcustom flymake-eslint-executable-name "eslint"
   "Name of executable to run when checker is called.  Must be present in variable `exec-path'."
   :type 'string
   :group 'flymake-eslint)
