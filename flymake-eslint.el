@@ -1,6 +1,6 @@
 ;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint --- -*- lexical-binding: t; -*-
 
-;;; Version: 1.0.0
+;;; Version: 1.0.1
 
 ;;; Author: Dan Orzechowski
 
@@ -137,7 +137,7 @@ Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  A
 
 
 (defun flymake-eslint-enable ()
-  "Enable `flymake-mode', and add flymake-eslint as a buffer-local Flymake backend."
+  "Enable Flymake and add flymake-eslint as a buffer-local Flymake backend."
   (interactive)
   (flymake-mode t)
   (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
