@@ -26,3 +26,7 @@ useful variables are members of the `flymake-eslint` group and can be viewed and
 ## Bugs
 
 yes
+
+## License
+
+MIT
