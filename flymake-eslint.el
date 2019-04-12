@@ -38,7 +38,6 @@
   "Name of executable to run when checker is called.  Must be present in variable `exec-path'."
   :type 'string
   :group 'flymake-eslint)
-(setq flymake-eslint-executable-name "eslint_d")
 
 
 (defcustom flymake-eslint-executable-args nil
@@ -63,7 +62,6 @@ Regular expression definition to match eslint messages.")
 (defvar-local flymake-eslint--process nil
   "Internal variable.
 Handle to the linter process for the current buffer.")
-(setq flymake-eslint--process nil)
 
 
 ;; internal functions
