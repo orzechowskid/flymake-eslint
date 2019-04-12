@@ -1,6 +1,6 @@
 ;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint -*- lexical-binding: t; -*-
 
-;;; Version: 1.2.0
+;;; Version: 1.3.0
 
 ;;; Author: Dan Orzechowski
 
@@ -39,25 +39,23 @@
   :type 'string
   :group 'flymake-eslint)
 
-
 (defcustom flymake-eslint-executable-args nil
   "Extra arguments to pass to eslint."
   :type 'string
+  :group 'flymake-eslint)
+
+(defcustom flymake-eslint-show-rule-name t
+  "Set to t to append rule name to end of warning or error message, nil otherwise."
+  :type 'boolean
   :group 'flymake-eslint)
 
 
 ;; internal variables
 
 
-(defvar flymake-eslint--filename ".##flymake-eslint.js"
-  "Internal variable.
-Name of the temporary file on which to run eslint.")
-
-
 (defvar flymake-eslint--message-regex "^[[:space:]]*\\([0-9]+\\):\\([0-9]+\\)[[:space:]]+\\(warning\\|error\\)[[:space:]]+\\(.+?\\)[[:space:]]\\{2,\\}\\(.*\\)$"
   "Internal variable.
 Regular expression definition to match eslint messages.")
-
 
 (defvar-local flymake-eslint--process nil
   "Internal variable.
@@ -73,14 +71,13 @@ Throw an error and tell REPORT-FN to disable itself if `flymake-eslint-executabl
   (unless (executable-find flymake-eslint-executable-name)
     (error (message "can't find '%s' in exec-path - try M-x set-variable flymake-eslint-executable-name maybe?" flymake-eslint-executable-name))))
 
-
 (defun flymake-eslint--report (eslint-stdout-buffer source-buffer)
   "Internal function.
 Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER, to be reported against SOURCE-BUFFER.  Returns a list of results"
   (with-current-buffer eslint-stdout-buffer
     ;; start at the top and check each line for an eslint message
     (goto-char (point-min))
-    (if (looking-at "Error:")
+    (if (looking-at-p "Error:")
         (let ((diag (flymake-make-diagnostic source-buffer (point-min) (point-max) :error (thing-at-point 'line t))))
           ;; ehhhhh point-min and point-max here are of the eslint output buffer
           ;; containing the error message, not source-buffer
@@ -93,14 +90,15 @@ Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER, to be report
                    (type (match-string 3))
                    (msg (match-string 4))
                    (lint-rule (match-string 5))
-	           (msg-text (format "%s: %s [%s]" type msg lint-rule))
+	           (msg-text (if flymake-eslint-show-rule-name
+                                 (format "%s: %s [%s]" type msg lint-rule)
+                               (format "%s: %s" type msg)))
                    (type-symbol (if (string-equal "warning" type) :warning :error))
                    (src-pos (flymake-diag-region source-buffer row column)))
               ;; new Flymake diag message
               (push (flymake-make-diagnostic source-buffer (car src-pos) (cdr src-pos) type-symbol msg-text) results)))
           (forward-line 1))
         results))))
-
 
 ;; heavily based on the example found at
 ;; https://www.gnu.org/software/emacs/manual/html_node/flymake/An-annotated-example-backend.html
@@ -125,7 +123,6 @@ Create linter process for SOURCE-BUFFER which invokes CALLBACK once linter is fi
                        (let ((proc-buffer (process-buffer proc)))
                          (funcall callback proc-buffer)
                          (kill-buffer proc-buffer)))))))
-   
 
 (defun flymake-eslint--check-and-report (source-buffer flymake-report-fn)
   "Internal function.
