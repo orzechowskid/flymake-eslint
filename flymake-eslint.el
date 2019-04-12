@@ -1,6 +1,6 @@
 ;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint -*- lexical-binding: t; -*-
 
-;;; Version: 1.1.0
+;;; Version: 1.2.0
 
 ;;; Author: Dan Orzechowski
 
