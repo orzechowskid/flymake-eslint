@@ -27,6 +27,23 @@ also in `~/.emacs` or wherever:
 
 useful variables are members of the `flymake-eslint` group and can be viewed and modified with the command `M-x customize-group [RET] flymake-eslint [RET]`.
 
+```lisp
+(defcustom flymake-eslint-executable-name "eslint"
+  "Name of executable to run when checker is called.  Must be present in variable `exec-path'."
+  :type 'string
+  :group 'flymake-eslint)
+
+(defcustom flymake-eslint-executable-args nil
+  "Extra arguments to pass to eslint."
+  :type 'string
+  :group 'flymake-eslint)
+
+(defcustom flymake-eslint-show-rule-name t
+  "Set to t to append rule name to end of warning or error message, nil otherwise."
+  :type 'boolean
+  :group 'flymake-eslint)
+```
+
 ## Bugs
 
 yes
