@@ -1,6 +1,8 @@
 # flymake-eslint
 Flymake backend for Javascript using eslint
 
+[![MELPA](https://melpa.org/packages/flymake-eslint-badge.svg)](https://melpa.org/#/flymake-eslint)
+
 ## Installation
 
 0. Make sure `eslint` is installed and present on your emacs `exec-path`.  For Linux systems `exec-path` usually equals your `$PATH` environment variable; for other systems, you're on your own.
