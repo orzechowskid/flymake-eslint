@@ -44,6 +44,10 @@ useful variables are members of the `flymake-eslint` group and can be viewed and
 
 yes
 
+## See Also
+
+[flymake-stylelint](https://github.com/orzechowskid/flymake-stylelint)
+
 ## License
 
 MIT
