@@ -113,7 +113,7 @@ Create linter process for SOURCE-BUFFER which invokes CALLBACK once linter is fi
          :connection-type 'pipe
          :noquery t
          :buffer (generate-new-buffer " *flymake-eslint*")
-         :command (list flymake-eslint-executable-name "--no-color" "--no-ignore" "--stdin-filename" (buffer-name source-buffer) (or flymake-eslint-executable-args ""))
+         :command (list flymake-eslint-executable-name "--no-color" "--no-ignore" "--stdin" "--stdin-filename" (buffer-name source-buffer) (or flymake-eslint-executable-args ""))
          :sentinel (lambda (proc &rest ignored)
                      ;; do stuff upon child process termination
                      (when (and (eq 'exit (process-status proc))
