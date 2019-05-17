@@ -3,6 +3,7 @@
 ;;; Version: 1.3.2
 
 ;;; Author: Dan Orzechowski
+;;; Contributor: Terje Larsen
 
 ;;; URL: https://github.com/orzechowskid/flymake-eslint
 
