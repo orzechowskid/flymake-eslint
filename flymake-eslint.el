@@ -97,7 +97,13 @@ Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER, to be report
                    (type-symbol (if (string-equal "warning" type) :warning :error))
                    (src-pos (flymake-diag-region source-buffer row column)))
               ;; new Flymake diag message
-              (push (flymake-make-diagnostic source-buffer (car src-pos) (cdr src-pos) type-symbol msg-text) results)))
+              (push (flymake-make-diagnostic source-buffer
+                                             (car src-pos)
+                                             ;; buffer might have changed size
+                                             (min (buffer-size source-buffer) (cdr src-pos))
+                                             type-symbol
+                                             msg-text)
+                    results)))
           (forward-line 1))
         results))))
 
