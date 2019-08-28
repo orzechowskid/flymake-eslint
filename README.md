@@ -8,9 +8,7 @@ Flymake backend for Javascript using eslint
 0. Make sure `eslint` is installed and present on your emacs `exec-path`.  For Linux systems `exec-path` usually equals your `$PATH` environment variable; for other systems, you're on your own.
 1. Install:
   - from MELPA: `M-x package-install [RET] flymake-eslint [RET]`
-  - manually: download and place inside `~/.emacs.d/lisp`.
-  
-  then edit `~/.emacs` or equivalent:
+  - manually: download and place inside `~/.emacs.d/lisp` then edit `~/.emacs` or equivalent:
   ```lisp
   (add-to-list 'load-path "~/.emacs.d/lisp")
   (require "flymake-eslint.el")
@@ -38,6 +36,13 @@ useful variables are members of the `flymake-eslint` group and can be viewed and
 
 (defcustom flymake-eslint-show-rule-name t
   "Set to t to append rule name to end of warning or error message, nil otherwise."
+  :type 'boolean
+  :group 'flymake-eslint)
+  
+(defcustom flymake-eslint-defer-binary-check nil
+  "Set to t to bypass the initial check which ensures eslint is present.
+
+Useful when the value of variable `exec-path' is set dynamically and the location of eslint might not be known ahead of time."
   :type 'boolean
   :group 'flymake-eslint)
 ```
