@@ -1,6 +1,6 @@
 ;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint -*- lexical-binding: t; -*-
 
-;;; Version: 1.4.0
+;;; Version: 1.5.0
 
 ;;; Author: Dan Orzechowski
 ;;; Contributor: Terje Larsen
@@ -53,8 +53,17 @@
 (defcustom flymake-eslint-defer-binary-check nil
   "Set to t to bypass the initial check which ensures eslint is present.
 
-Useful when the value of `exec-path' is set dynamically and the location of eslint might not be known ahead of time."
+Useful when the value of variable `exec-path' is set dynamically and the location of eslint might not be known ahead of time."
   :type 'boolean
+  :group 'flymake-eslint)
+
+
+;; useful buffer-local variables
+
+
+(defcustom flymake-eslint-project-root nil
+  "Buffer-local.  Set to a filesystem path to use that path as the current working directory of the linting process."
+  :type 'string
   :group 'flymake-eslint)
 
 
@@ -121,24 +130,25 @@ Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER, to be report
 Create linter process for SOURCE-BUFFER which invokes CALLBACK once linter is finished.  CALLBACK is passed one argument, which is a buffer containing stdout from linter."
   (when (process-live-p flymake-eslint--process)
     (kill-process flymake-eslint--process))
-  (setq flymake-eslint--process
-        (make-process
-         :name "flymake-eslint"
-         :connection-type 'pipe
-         :noquery t
-         :buffer (generate-new-buffer " *flymake-eslint*")
-         :command (list flymake-eslint-executable-name "--no-color" "--no-ignore" "--stdin" "--stdin-filename" (buffer-file-name source-buffer) (or flymake-eslint-executable-args ""))
-         :sentinel (lambda (proc &rest ignored)
-                     ;; do stuff upon child process termination
-                     (when (and (eq 'exit (process-status proc))
-                                ;; make sure we're not using a deleted buffer
-                                (buffer-live-p source-buffer)
-                                ;; make sure we're using the latest lint process
-                                (with-current-buffer source-buffer (eq proc flymake-eslint--process)))
-                       ;; read from eslint output then destroy temp buffer when done
-                       (let ((proc-buffer (process-buffer proc)))
-                         (funcall callback proc-buffer)
-                         (kill-buffer proc-buffer)))))))
+  (let ((default-directory (or flymake-eslint-project-root default-directory)))
+    (setq flymake-eslint--process
+          (make-process
+           :name "flymake-eslint"
+           :connection-type 'pipe
+           :noquery t
+           :buffer (generate-new-buffer " *flymake-eslint*")
+           :command (list flymake-eslint-executable-name "--no-color" "--no-ignore" "--stdin" "--stdin-filename" (buffer-file-name source-buffer) (or flymake-eslint-executable-args ""))
+           :sentinel (lambda (proc &rest ignored)
+                       ;; do stuff upon child process termination
+                       (when (and (eq 'exit (process-status proc))
+                                  ;; make sure we're not using a deleted buffer
+                                  (buffer-live-p source-buffer)
+                                  ;; make sure we're using the latest lint process
+                                  (with-current-buffer source-buffer (eq proc flymake-eslint--process)))
+                         ;; read from eslint output then destroy temp buffer when done
+                         (let ((proc-buffer (process-buffer proc)))
+                           (funcall callback proc-buffer)
+                           (kill-buffer proc-buffer))))))))
 
 (defun flymake-eslint--check-and-report (source-buffer flymake-report-fn)
   "Internal function.
@@ -168,6 +178,7 @@ Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  A
   (interactive)
   (if (not flymake-eslint-defer-binary-check)
       (flymake-eslint--ensure-binary-exists))
+  (make-local-variable 'flymake-eslint-project-root)
   (flymake-mode t)
   (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
 

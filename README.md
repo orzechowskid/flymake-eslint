@@ -45,6 +45,11 @@ useful variables are members of the `flymake-eslint` group and can be viewed and
 Useful when the value of variable `exec-path' is set dynamically and the location of eslint might not be known ahead of time."
   :type 'boolean
   :group 'flymake-eslint)
+
+(defcustom flymake-eslint-project-root nil
+  "Buffer-local.  Set to a filesystem path to use that path as the current working directory of the linting process."
+  :type 'string
+  :group 'flymake-eslint)
 ```
 
 ## Bugs
