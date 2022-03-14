@@ -42,7 +42,7 @@
 
 (defcustom flymake-eslint-executable-args nil
   "Extra arguments to pass to eslint."
-  :type 'string
+  :type '(choice string (repeat string))
   :group 'flymake-eslint)
 
 (defcustom flymake-eslint-show-rule-name t
@@ -81,6 +81,14 @@ Handle to the linter process for the current buffer.")
 
 ;; internal functions
 
+
+(defun flymake-eslint--executable-args ()
+  "Return a list of strings for additional arguments to pass to `flymake-eslint-executable-name'.
+Return `flymake-eslint-executable-args' if it is a list and a
+list containing `flymake-eslint-executable-args' if it isn't."
+  (if (listp flymake-eslint-executable-args)
+      flymake-eslint-executable-args
+    (list flymake-eslint-executable-args)))
 
 (defun flymake-eslint--ensure-binary-exists ()
   "Internal function.
@@ -137,7 +145,7 @@ Create linter process for SOURCE-BUFFER which invokes CALLBACK once linter is fi
            :connection-type 'pipe
            :noquery t
            :buffer (generate-new-buffer " *flymake-eslint*")
-           :command (list flymake-eslint-executable-name "--no-color" "--no-ignore" "--stdin" "--stdin-filename" (buffer-file-name source-buffer) (or flymake-eslint-executable-args ""))
+           :command `(,flymake-eslint-executable-name "--no-color" "--no-ignore" "--stdin" "--stdin-filename" ,(buffer-file-name source-buffer) ,@(flymake-eslint--executable-args))
            :sentinel (lambda (proc &rest ignored)
                        ;; do stuff upon child process termination
                        (when (and (eq 'exit (process-status proc))
