@@ -126,7 +126,8 @@ Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER, to be report
                                              ;; buffer might have changed size
                                              (min (buffer-size source-buffer) (cdr src-pos))
                                              type-symbol
-                                             msg-text)
+                                             msg-text
+                                             (list :rule-name lint-rule))
                     results)))
           (forward-line 1))
         results))))
