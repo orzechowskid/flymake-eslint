@@ -23,6 +23,10 @@
 
 ;;; Code:
 
+;;;; Requirements
+
+(require 'cl-lib)
+
 ;;;; Customization
 
 (defgroup flymake-eslint nil
@@ -66,7 +70,11 @@ directory of the linting process."
 
 ;;;; Variables
 
-(defvar flymake-eslint--message-regex "^[[:space:]]*\\([0-9]+\\):\\([0-9]+\\)[[:space:]]+\\(warning\\|error\\)[[:space:]]+\\(.+?\\)[[:space:]]\\{2,\\}\\(.*\\)$"
+(defvar flymake-eslint--message-regexp
+  (rx bol (* space) (group (+ num)) ":" (group (+ num)) ; line:col
+      (+ space) (group (or "error" "warning"))          ; type
+      (+ space) (group (+? any))                        ; message
+      (>= 2 space) (group (* any)) eol)                 ; rule name
   "Regexp to match eslint messages.")
 
 (defvar-local flymake-eslint--process nil
@@ -103,7 +111,9 @@ Otherwise, throw an error and tell Flymake to disable this
 backend if `flymake-eslint-executable-name' can't be found in
 variable `exec-path'"
   (unless (executable-find flymake-eslint-executable-name)
-    (error (message "can't find '%s' in exec-path - try M-x set-variable flymake-eslint-executable-name maybe?" flymake-eslint-executable-name))))
+    (let ((option 'flymake-eslint-executable-name))
+      (error "Can't find \"%s\" in exec-path - try to configure `%s'"
+             (symbol-value option) option))))
 
 (defun flymake-eslint--report (eslint-stdout-buffer source-buffer)
   "Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER.
@@ -113,34 +123,33 @@ results."
     ;; start at the top and check each line for an eslint message
     (goto-char (point-min))
     (if (looking-at-p "Error:")
-        (let ((diag (flymake-make-diagnostic source-buffer (point-min) (point-max) :error (thing-at-point 'line t))))
-          ;; ehhhhh point-min and point-max here are of the eslint output buffer
-          ;; containing the error message, not source-buffer
-          (list diag))
-      (let ((results '()))
-        (while (not (eobp))
-          (when (looking-at flymake-eslint--message-regex)
-            (let* ((row (string-to-number (match-string 1)))
-                   (column (string-to-number (match-string 2)))
-                   (type (match-string 3))
-                   (msg (match-string 4))
-                   (lint-rule (match-string 5))
-	           (msg-text (if flymake-eslint-show-rule-name
-                                 (format "%s: %s [%s]" type msg lint-rule)
-                               (format "%s: %s" type msg)))
-                   (type-symbol (if (string-equal "warning" type) :warning :error))
-                   (src-pos (flymake-diag-region source-buffer row column)))
-              ;; new Flymake diag message
-              (push (flymake-make-diagnostic source-buffer
-                                             (car src-pos)
-                                             ;; buffer might have changed size
-                                             (min (buffer-size source-buffer) (cdr src-pos))
-                                             type-symbol
-                                             msg-text
-                                             (list :rule-name lint-rule))
-                    results)))
-          (forward-line 1))
-        results))))
+        (pcase-let ((`(,beg . ,end) (with-current-buffer source-buffer
+                                      (cons (point-min) (point-max))))
+                    (msg (thing-at-point 'line t)))
+          (list (flymake-make-diagnostic source-buffer beg end :error msg)))
+      (cl-loop
+       until (eobp)
+       when (looking-at flymake-eslint--message-regexp)
+       collect (let* ((row (string-to-number (match-string 1)))
+                      (column (string-to-number (match-string 2)))
+                      (type (match-string 3))
+                      (msg (match-string 4))
+                      (lint-rule (match-string 5))
+                      (msg-text (concat (format "%s: %s" type msg)
+                                        (when flymake-eslint-show-rule-name
+                                          (format " [%s]" lint-rule))))
+                      (type-symbol (pcase type ("warning" :warning) (_ :error)))
+                      (src-pos (flymake-diag-region source-buffer row column)))
+                 ;; new Flymake diag message
+                 (flymake-make-diagnostic
+                  source-buffer
+                  (car src-pos)
+                  ;; buffer might have changed size
+                  (min (buffer-size source-buffer) (cdr src-pos))
+                  type-symbol
+                  msg-text
+                  (list :rule-name lint-rule)))
+       do (forward-line 1)))))
 
 ;; Heavily based on the example found at
 ;; https://www.gnu.org/software/emacs/manual/html_node/flymake/An-annotated-example-backend.html
@@ -158,36 +167,42 @@ argument."
            :connection-type 'pipe
            :noquery t
            :buffer (generate-new-buffer " *flymake-eslint*")
-           :command `(,flymake-eslint-executable-name "--no-color" "--no-ignore" "--stdin" "--stdin-filename" ,(buffer-file-name source-buffer) ,@(flymake-eslint--executable-args))
-           :sentinel (lambda (proc &rest ignored)
-                       ;; do stuff upon child process termination
-                       (when (and (eq 'exit (process-status proc))
-                                  ;; make sure we're not using a deleted buffer
-                                  (buffer-live-p source-buffer)
-                                  ;; make sure we're using the latest lint process
-                                  (with-current-buffer source-buffer (eq proc flymake-eslint--process)))
-                         ;; read from eslint output then destroy temp buffer when done
-                         (let ((proc-buffer (process-buffer proc)))
-                           (funcall callback proc-buffer)
-                           (kill-buffer proc-buffer))))))))
+           :command `(,flymake-eslint-executable-name
+                      "--no-color" "--no-ignore" "--stdin" "--stdin-filename"
+                      ,(buffer-file-name source-buffer)
+                      ,@(flymake-eslint--executable-args))
+           :sentinel
+           (lambda (proc &rest ignored)
+             ;; do stuff upon child process termination
+             (when (and (eq 'exit (process-status proc))
+                        ;; make sure we're not using a deleted buffer
+                        (buffer-live-p source-buffer)
+                        ;; make sure we're using the latest lint process
+                        (eq proc (buffer-local-value 'flymake-eslint--process
+                                                     source-buffer)))
+               ;; read from eslint output then destroy temp buffer when done
+               (let ((proc-buffer (process-buffer proc)))
+                 (funcall callback proc-buffer)
+                 (kill-buffer proc-buffer))))))))
 
-(defun flymake-eslint--check-and-report (source-buffer flymake-report-fn)
-  "Internal function.
-Run eslint against SOURCE-BUFFER and use FLYMAKE-REPORT-FN to report results."
-  (if flymake-eslint-defer-binary-check
-      (flymake-eslint--ensure-binary-exists))
+(defun flymake-eslint--check-and-report (source-buffer report-fn)
+  "Run eslint against SOURCE-BUFFER.
+Use REPORT-FN to report results."
+  (when flymake-eslint-defer-binary-check
+    (flymake-eslint--ensure-binary-exists))
   (flymake-eslint--create-process
    source-buffer
    (lambda (eslint-stdout)
-     (funcall flymake-report-fn (flymake-eslint--report eslint-stdout source-buffer))))
+     (funcall report-fn (flymake-eslint--report eslint-stdout source-buffer))))
   (with-current-buffer source-buffer
     (process-send-string flymake-eslint--process (buffer-string))
     (process-send-eof flymake-eslint--process)))
 
-(defun flymake-eslint--checker (flymake-report-fn &rest ignored)
-  "Internal function.
-Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  All other parameters are currently IGNORED."
-  (flymake-eslint--check-and-report (current-buffer) flymake-report-fn))
+(defun flymake-eslint--checker (report-fn &rest _ignored)
+  "Run eslint on the current buffer.
+Report results using REPORT-FN.  All other parameters are
+currently ignored."
+  (flymake-eslint--check-and-report (current-buffer) report-fn))
 
 ;;;; Footer
 
