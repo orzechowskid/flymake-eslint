@@ -23,21 +23,16 @@
 
 ;;; Code:
 
-
-;; our own customization group
-
+;;;; Customization
 
 (defgroup flymake-eslint nil
-  "Flymake checker for Javascript using eslint"
+  "Flymake checker for Javascript using eslint."
   :group 'programming
   :prefix "flymake-eslint-")
 
-
-;; useful variables
-
-
 (defcustom flymake-eslint-executable-name "eslint"
-  "Name of executable to run when checker is called.  Must be present in variable `exec-path'."
+  "Name of executable to run when checker is called.
+Must be present in variable `exec-path'."
   :type 'string
   :group 'flymake-eslint)
 
@@ -47,59 +42,73 @@
   :group 'flymake-eslint)
 
 (defcustom flymake-eslint-show-rule-name t
-  "Set to t to append rule name to end of warning or error message, nil otherwise."
+  "When non-nil show eslint rule name in flymake diagnostic."
   :type 'boolean
   :group 'flymake-eslint)
 
 (defcustom flymake-eslint-defer-binary-check nil
-  "Set to t to bypass the initial check which ensures eslint is present.
+  "Defer the eslint binary presence check.
+When non-nil, the initial check, which ensures that eslint binary
+is present, is disabled.  Instead, this check is performed during
+backend execution.
 
-Useful when the value of variable `exec-path' is set dynamically and the location of eslint might not be known ahead of time."
+Useful when the value of variable `exec-path' is set dynamically
+and the location of eslint might not be known ahead of time."
   :type 'boolean
   :group 'flymake-eslint)
 
-
-;; useful buffer-local variables
-
-
 (defcustom flymake-eslint-project-root nil
-  "Buffer-local.  Set to a filesystem path to use that path as the current working directory of the linting process."
+  "Buffer-local.
+Set to a filesystem path to use that path as the current working
+directory of the linting process."
   :type 'string
   :group 'flymake-eslint)
 
-
-;; internal variables
-
+;;;; Variables
 
 (defvar flymake-eslint--message-regex "^[[:space:]]*\\([0-9]+\\):\\([0-9]+\\)[[:space:]]+\\(warning\\|error\\)[[:space:]]+\\(.+?\\)[[:space:]]\\{2,\\}\\(.*\\)$"
-  "Internal variable.
-Regular expression definition to match eslint messages.")
+  "Regexp to match eslint messages.")
 
 (defvar-local flymake-eslint--process nil
-  "Internal variable.
-Handle to the linter process for the current buffer.")
+  "Handle to the linter process for the current buffer.")
 
+;;;; Functions
 
-;; internal functions
+;;;;; Public
 
+;;;###autoload
+(defun flymake-eslint-enable ()
+  "Enable Flymake and flymake-eslint.
+Add this function to some js major mode hook."
+  (interactive)
+  (unless flymake-eslint-defer-binary-check
+    (flymake-eslint--ensure-binary-exists))
+  (make-local-variable 'flymake-eslint-project-root)
+  (flymake-mode t)
+  (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
+
+;;;;; Private
 
 (defun flymake-eslint--executable-args ()
-  "Return a list of strings for additional arguments to pass to `flymake-eslint-executable-name'.
-Return `flymake-eslint-executable-args' if it is a list and a
-list containing `flymake-eslint-executable-args' if it isn't."
+  "Get additional arguments for `flymake-eslint-executable-name'.
+Return `flymake-eslint-executable-args' value and ensure that
+this is a list."
   (if (listp flymake-eslint-executable-args)
       flymake-eslint-executable-args
     (list flymake-eslint-executable-args)))
 
 (defun flymake-eslint--ensure-binary-exists ()
-  "Internal function.
-Throw an error and tell REPORT-FN to disable itself if `flymake-eslint-executable-name' can't be found on variable `exec-path'"
+  "Ensure that `flymake-eslint-executable-name' exists.
+Otherwise, throw an error and tell Flymake to disable this
+backend if `flymake-eslint-executable-name' can't be found in
+variable `exec-path'"
   (unless (executable-find flymake-eslint-executable-name)
     (error (message "can't find '%s' in exec-path - try M-x set-variable flymake-eslint-executable-name maybe?" flymake-eslint-executable-name))))
 
 (defun flymake-eslint--report (eslint-stdout-buffer source-buffer)
-  "Internal function.
-Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER, to be reported against SOURCE-BUFFER.  Returns a list of results"
+  "Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER.
+They are reported against SOURCE-BUFFER.  Return a list of
+results."
   (with-current-buffer eslint-stdout-buffer
     ;; start at the top and check each line for an eslint message
     (goto-char (point-min))
@@ -133,11 +142,13 @@ Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER, to be report
           (forward-line 1))
         results))))
 
-;; heavily based on the example found at
+;; Heavily based on the example found at
 ;; https://www.gnu.org/software/emacs/manual/html_node/flymake/An-annotated-example-backend.html
 (defun flymake-eslint--create-process (source-buffer callback)
-  "Internal function.
-Create linter process for SOURCE-BUFFER which invokes CALLBACK once linter is finished.  CALLBACK is passed one argument, which is a buffer containing stdout from linter."
+  "Create linter process for SOURCE-BUFFER.
+CALLBACK is invoked once linter has finished the execution.
+CALLBACK accepts a buffer containing stdout from linter as its
+argument."
   (when (process-live-p flymake-eslint--process)
     (kill-process flymake-eslint--process))
   (let ((default-directory (or flymake-eslint-project-root default-directory)))
@@ -178,22 +189,8 @@ Run eslint against SOURCE-BUFFER and use FLYMAKE-REPORT-FN to report results."
 Run eslint on the current buffer, and report results using FLYMAKE-REPORT-FN.  All other parameters are currently IGNORED."
   (flymake-eslint--check-and-report (current-buffer) flymake-report-fn))
 
-
-;; module entry point
-
-
-;;;###autoload
-(defun flymake-eslint-enable ()
-  "Enable Flymake and add flymake-eslint as a buffer-local Flymake backend."
-  (interactive)
-  (if (not flymake-eslint-defer-binary-check)
-      (flymake-eslint--ensure-binary-exists))
-  (make-local-variable 'flymake-eslint-project-root)
-  (flymake-mode t)
-  (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
-
+;;;; Footer
 
 (provide 'flymake-eslint)
-
 
 ;;; flymake-eslint.el ends here
