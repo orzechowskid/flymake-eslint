@@ -1,24 +1,25 @@
-;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint -*- lexical-binding: t; -*-
+;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint  -*- lexical-binding: t; -*-
 
-;;; Version: 1.6.0
-
-;;; Author: Dan Orzechowski
-;;; Contributor: Terje Larsen
-
-;;; URL: https://github.com/orzechowskid/flymake-eslint
-
-;;; Package-Requires: ((emacs "26.0"))
+;; Version: 1.6.0
+;; Author: Dan Orzechowski
+;; Contributor: Terje Larsen
+;; URL: https://github.com/orzechowskid/flymake-eslint
+;; Package-Requires: ((emacs "26.1"))
+;; Keywords: languages, tools
 
 ;;; Commentary:
-;; A backend for Flymake which uses eslint.  Enable it with `M-x flymake-eslint-enable [RET]'.
-;; Alternately, configure a mode-hook for your Javascript major mode of choice:
-;;
-;; (add-hook 'some-js-major-mode-hook
-;;   (lambda () (flymake-eslint-enable))
-;;
-;; A handful of configurable options can be found in the `flymake-eslint' customization group: view and modify them with the command `M-x customize-group [RET] flymake-eslint [RET]'.
 
-;;; License: MIT
+;; A backend for Flymake which uses eslint.  Enable it with M-x
+;; flymake-eslint-enable RET.  Alternately, configure a mode-hook for your
+;; Javascript major mode of choice:
+
+;; (add-hook 'some-js-major-mode-hook #'flymake-eslint-enable)
+
+;; A handful of configurable options can be found in the flymake-eslint
+;; customization group: view and modify them with the M-x customize-group RET
+;; flymake-eslint RET.
+
+;; License: MIT
 
 ;;; Code:
 
