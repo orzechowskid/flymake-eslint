@@ -172,7 +172,7 @@ argument."
                       ,(buffer-file-name source-buffer)
                       ,@(flymake-eslint--executable-args))
            :sentinel
-           (lambda (proc &rest ignored)
+           (lambda (proc &rest _ignored)
              ;; do stuff upon child process termination
              (when (and (eq 'exit (process-status proc))
                         ;; make sure we're not using a deleted buffer
