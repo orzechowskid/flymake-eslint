@@ -26,6 +26,7 @@
 ;;;; Requirements
 
 (require 'cl-lib)
+(require 'project)
 
 ;;;; Customization
 
@@ -160,7 +161,10 @@ CALLBACK accepts a buffer containing stdout from linter as its
 argument."
   (when (process-live-p flymake-eslint--process)
     (kill-process flymake-eslint--process))
-  (let ((default-directory (or flymake-eslint-project-root default-directory)))
+  (let ((default-directory
+         (if (project-current)
+             (project-root (project-current))
+             default-directory)))
     (setq flymake-eslint--process
           (make-process
            :name "flymake-eslint"
