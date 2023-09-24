@@ -5,7 +5,7 @@ Flymake backend for Javascript using eslint
 
 ## Installation
 
-0. Make sure `eslint` is installed and present on your emacs `exec-path`.  For Linux systems `exec-path` usually equals your `$PATH` environment variable; for other systems, you're on your own.
+0. Make sure `eslint` is installed either globally and present on your Emacs `exec-path` or present in your project `node_modules/.bin` directory.  For Linux systems `exec-path` usually equals your `$PATH` environment variable; for other systems, you're on your own.
 1. Install:
   - from MELPA: `M-x package-install [RET] flymake-eslint [RET]`
   - manually: download and place inside `~/.emacs.d/lisp` then edit `~/.emacs` or equivalent:
@@ -49,6 +49,11 @@ Useful when the value of variable `exec-path' is set dynamically and the locatio
 (defcustom flymake-eslint-project-root nil
   "Buffer-local.  Set to a filesystem path to use that path as the current working directory of the linting process."
   :type 'string
+  :group 'flymake-eslint)
+
+(defcustom flymake-eslint-prefer-global nil
+  "Prefer a globally installed ESLint when looking for the executable."
+  :type 'boolean
   :group 'flymake-eslint)
 ```
 

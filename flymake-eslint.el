@@ -26,6 +26,7 @@
 ;;;; Requirements
 
 (require 'cl-lib)
+(require 'project)
 
 ;;;; Customization
 
@@ -68,6 +69,11 @@ directory of the linting process."
   :type 'string
   :group 'flymake-eslint)
 
+(defcustom flymake-eslint-prefer-global nil
+  "Prefer a globally installed ESLint when looking for the executable."
+  :type 'boolean
+  :group 'flymake-eslint)
+
 ;;;; Variables
 
 (defvar flymake-eslint--message-regexp
@@ -105,12 +111,29 @@ this is a list."
       flymake-eslint-executable-args
     (list flymake-eslint-executable-args)))
 
+(defun flymake-eslint--find-eslint ()
+  "Find the ESLint executable.
+Give priority to the locally installed ESLint unless
+ `flymake-eslint-prefer-global' is enabled."
+  (let* ((node-modules-dir
+         (concat
+          (when (project-current) (project-root (project-current)))
+          (file-name-as-directory "node_modules")
+          (file-name-as-directory ".bin")))
+         (exec-path
+          (if (and (project-current) (file-directory-p node-modules-dir))
+              (if flymake-eslint-prefer-global
+                  (append exec-path '(node-modules-dir))
+                (cons node-modules-dir exec-path))
+            exec-path)))
+    (executable-find flymake-eslint-executable-name)))
+
 (defun flymake-eslint--ensure-binary-exists ()
   "Ensure that `flymake-eslint-executable-name' exists.
 Otherwise, throw an error and tell Flymake to disable this
 backend if `flymake-eslint-executable-name' can't be found in
 variable `exec-path'"
-  (unless (executable-find flymake-eslint-executable-name)
+  (unless (flymake-eslint--find-eslint)
     (let ((option 'flymake-eslint-executable-name))
       (error "Can't find \"%s\" in exec-path - try to configure `%s'"
              (symbol-value option) option))))
@@ -167,7 +190,7 @@ argument."
            :connection-type 'pipe
            :noquery t
            :buffer (generate-new-buffer " *flymake-eslint*")
-           :command `(,flymake-eslint-executable-name
+           :command `(,(flymake-eslint--find-eslint)
                       "--no-color" "--no-ignore" "--stdin" "--stdin-filename"
                       ,(buffer-file-name source-buffer)
                       ,@(flymake-eslint--executable-args))
