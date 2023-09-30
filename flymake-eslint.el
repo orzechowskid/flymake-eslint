@@ -27,7 +27,8 @@
 
 (require 'cl-lib)
 (require 'project)
-(require 'json)
+(when (featurep 'json)
+  (require 'json))
 
 ;;;; Customization
 
@@ -73,7 +74,7 @@ directory of the linting process."
 (defcustom flymake-eslint-prefer-json-diagnostics nil
   "Try to use the JSON diagnostic format when running eslint.
 This gives more accurate diagnostics but requires having an Emacs
-version with JSON support."
+installation with JSON support."
   :type 'boolean
   :group 'flymake-eslint)
 
@@ -163,18 +164,21 @@ variable `exec-path'"
 (defun flymake-eslint--report-json (eslint-stdout-buffer source-buffer)
   "Create Flymake diagnostics from the JSON diagnostic in ESLINT-STDOUT-BUFFER.
 The diagnostics are reported against SOURCE-BUFFER."
-  (with-current-buffer eslint-stdout-buffer
-    (goto-char (point-min))
-    (let* ((full-diagnostics (json-parse-buffer))
-           (eslint-diags (gethash "messages"(elt full-diagnostics 0))))
-      (seq-map
-       (lambda (diag)
-         (flymake-eslint--diag-from-eslint diag source-buffer))
-       eslint-diags))))
+  (if (featurep 'json)
+      (with-current-buffer eslint-stdout-buffer
+        (goto-char (point-min))
+        (let* ((full-diagnostics (json-parse-buffer))
+               (eslint-diags (gethash "messages"(elt full-diagnostics 0))))
+          (seq-map
+           (lambda (diag)
+             (flymake-eslint--diag-from-eslint diag source-buffer))
+           eslint-diags)))
+    (error
+     "Tried to parse JSON diagnostics but current Emacs does not support it.")))
 
 (defun flymake-eslint--use-json-p ()
   "Check if eslint diagnostics should be requested to be formatted as JSON."
-  (and (json-available-p) flymake-eslint-prefer-json-diagnostics))
+  (and (featurep 'json) flymake-eslint-prefer-json-diagnostics))
 
 (defun flymake-eslint--report (eslint-stdout-buffer source-buffer)
   "Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER.
