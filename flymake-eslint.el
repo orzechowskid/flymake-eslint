@@ -71,7 +71,7 @@ directory of the linting process."
   :group 'flymake-eslint)
 
 (defcustom flymake-eslint-prefer-json-diagnostics nil
-  "Try to use the JSON diagnostic format when runnin ESLint.
+  "Try to use the JSON diagnostic format when running eslint.
 This gives more accurate diagnostics but requires having an Emacs
 version with JSON support."
   :type 'boolean
@@ -173,7 +173,7 @@ The diagnostics are reported against SOURCE-BUFFER."
        eslint-diags))))
 
 (defun flymake-eslint--use-json-p ()
-  "Check if ESLint diagnostics should be requested to be formatted as JSON."
+  "Check if eslint diagnostics should be requested to be formatted as JSON."
   (and (json-available-p) flymake-eslint-prefer-json-diagnostics))
 
 (defun flymake-eslint--report (eslint-stdout-buffer source-buffer)
