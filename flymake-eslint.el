@@ -151,7 +151,7 @@ variable `exec-path'"
          (msg (gethash "message" eslint-diag))
          (full-msg (concat
                     msg
-                    (when flymake-eslint--message-regexp
+                    (when (and flymake-eslint-show-rule-name lint-rule)
                       (format " [%s]" lint-rule)))))
     (flymake-make-diagnostic
      buffer
