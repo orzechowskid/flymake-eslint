@@ -27,6 +27,8 @@
 
 (require 'cl-lib)
 (require 'project)
+(when (featurep 'json)
+  (require 'json))
 
 ;;;; Customization
 
@@ -67,6 +69,13 @@ and the location of eslint might not be known ahead of time."
 Set to a filesystem path to use that path as the current working
 directory of the linting process."
   :type 'string
+  :group 'flymake-eslint)
+
+(defcustom flymake-eslint-prefer-json-diagnostics nil
+  "Try to use the JSON diagnostic format when running eslint.
+This gives more accurate diagnostics but requires having an Emacs
+installation with JSON support."
+  :type 'boolean
   :group 'flymake-eslint)
 
 ;;;; Variables
@@ -116,6 +125,61 @@ variable `exec-path'"
       (error "Can't find \"%s\" in exec-path - try to configure `%s'"
              (symbol-value option) option))))
 
+(defun flymake-eslint--get-position (line column buffer)
+  "Get the position at LINE and COLUMN for BUFFER."
+  (with-current-buffer buffer
+    (save-excursion
+      (when (and line column)
+        (goto-char (point-min))
+        (forward-line (1- line))
+        (forward-char (1- column))
+        (point)))))
+
+(defun flymake-eslint--diag-from-eslint (eslint-diag buffer)
+  "Transform ESLINT-DIAG diagnostic for BUFFER into a Flymake one."
+  (let* ((beg-line (gethash "line" eslint-diag))
+         (beg-col (gethash "column" eslint-diag))
+         (beg-pos (flymake-eslint--get-position beg-line beg-col buffer))
+         (end-line (gethash "endLine" eslint-diag))
+         (end-col (gethash "endColumn" eslint-diag))
+         (end-pos (if end-line
+                      (flymake-eslint--get-position end-line end-col buffer)
+                    (cdr (flymake-diag-region buffer beg-line))))
+         (lint-rule (gethash "ruleId" eslint-diag))
+         (severity (gethash "severity" eslint-diag))
+         (type (if (equal severity 1) :warning :error))
+         (msg (gethash "message" eslint-diag))
+         (full-msg (concat
+                    msg
+                    (when (and flymake-eslint-show-rule-name lint-rule)
+                      (format " [%s]" lint-rule)))))
+    (flymake-make-diagnostic
+     buffer
+     beg-pos
+     end-pos
+     type
+     full-msg
+     (list :rule-name lint-rule))))
+
+(defun flymake-eslint--report-json (eslint-stdout-buffer source-buffer)
+  "Create Flymake diagnostics from the JSON diagnostic in ESLINT-STDOUT-BUFFER.
+The diagnostics are reported against SOURCE-BUFFER."
+  (if (featurep 'json)
+      (with-current-buffer eslint-stdout-buffer
+        (goto-char (point-min))
+        (let* ((full-diagnostics (json-parse-buffer))
+               (eslint-diags (gethash "messages"(elt full-diagnostics 0))))
+          (seq-map
+           (lambda (diag)
+             (flymake-eslint--diag-from-eslint diag source-buffer))
+           eslint-diags)))
+    (error
+     "Tried to parse JSON diagnostics but current Emacs does not support it.")))
+
+(defun flymake-eslint--use-json-p ()
+  "Check if eslint diagnostics should be requested to be formatted as JSON."
+  (and (featurep 'json) flymake-eslint-prefer-json-diagnostics))
+
 (defun flymake-eslint--report (eslint-stdout-buffer source-buffer)
   "Create Flymake diag messages from contents of ESLINT-STDOUT-BUFFER.
 They are reported against SOURCE-BUFFER.  Return a list of
@@ -164,7 +228,11 @@ argument."
   (let ((default-directory
          (if (project-current)
              (project-root (project-current))
-             default-directory)))
+             default-directory))
+        (format-args
+         (if (flymake-eslint--use-json-p)
+             '("--format" "json")
+           "")))
     (setq flymake-eslint--process
           (make-process
            :name "flymake-eslint"
@@ -172,7 +240,11 @@ argument."
            :noquery t
            :buffer (generate-new-buffer " *flymake-eslint*")
            :command `(,flymake-eslint-executable-name
-                      "--no-color" "--no-ignore" "--stdin" "--stdin-filename"
+                      "--no-color"
+                      "--no-ignore"
+                      ,@format-args
+                      "--stdin"
+                      "--stdin-filename"
                       ,(buffer-file-name source-buffer)
                       ,@(flymake-eslint--executable-args))
            :sentinel
@@ -194,13 +266,19 @@ argument."
 Use REPORT-FN to report results."
   (when flymake-eslint-defer-binary-check
     (flymake-eslint--ensure-binary-exists))
-  (flymake-eslint--create-process
-   source-buffer
-   (lambda (eslint-stdout)
-     (funcall report-fn (flymake-eslint--report eslint-stdout source-buffer))))
-  (with-current-buffer source-buffer
-    (process-send-string flymake-eslint--process (buffer-string))
-    (process-send-eof flymake-eslint--process)))
+  (let ((diag-builder-fn
+         (if (flymake-eslint--use-json-p)
+             'flymake-eslint--report-json
+           'flymake-eslint--report)))
+    (flymake-eslint--create-process
+     source-buffer
+     (lambda (eslint-stdout)
+       (funcall
+        report-fn
+        (funcall diag-builder-fn eslint-stdout source-buffer))))
+    (with-current-buffer source-buffer
+      (process-send-string flymake-eslint--process (buffer-string))
+      (process-send-eof flymake-eslint--process))))
 
 (defun flymake-eslint--checker (report-fn &rest _ignored)
   "Run eslint on the current buffer.

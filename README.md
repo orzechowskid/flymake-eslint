@@ -50,6 +50,13 @@ Useful when the value of variable `exec-path' is set dynamically and the locatio
   "Buffer-local.  Set to a filesystem path to use that path as the current working directory of the linting process."
   :type 'string
   :group 'flymake-eslint)
+  
+(defcustom flymake-eslint-prefer-json-diagnostics nil
+  "Try to use the JSON diagnostic format when runnin ESLint.
+This gives more accurate diagnostics but requires having an Emacs
+version with JSON support."
+  :type 'boolean
+  :group 'flymake-eslint)
 ```
 
 ## Bugs
