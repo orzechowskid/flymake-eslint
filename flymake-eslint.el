@@ -248,18 +248,20 @@ argument."
                       ,(buffer-file-name source-buffer)
                       ,@(flymake-eslint--executable-args))
            :sentinel
-           (lambda (proc &rest _ignored)
-             ;; do stuff upon child process termination
-             (when (and (eq 'exit (process-status proc))
-                        ;; make sure we're not using a deleted buffer
-                        (buffer-live-p source-buffer)
-                        ;; make sure we're using the latest lint process
-                        (eq proc (buffer-local-value 'flymake-eslint--process
-                                                     source-buffer)))
-               ;; read from eslint output then destroy temp buffer when done
-               (let ((proc-buffer (process-buffer proc)))
-                 (funcall callback proc-buffer)
-                 (kill-buffer proc-buffer))))))))
+           (lambda (proc &rest ignored)
+             (let ((status (process-status proc))
+                   (buffer (process-buffer proc)))
+               (when (and (eq 'exit status)
+                          ;; make sure we're not using a deleted buffer
+                          (buffer-live-p source-buffer)
+                          ;; make sure we're using the latest lint process
+                          (eq proc (buffer-local-value 'flymake-eslint--process
+                                                       source-buffer)))
+                 ;; read from eslint output
+                 (funcall callback buffer))
+               ;; destroy temp buffer when done or killed
+               (when (memq status '(exit signal))
+                 (kill-buffer buffer))))))))
 
 (defun flymake-eslint--check-and-report (source-buffer report-fn)
   "Run eslint against SOURCE-BUFFER.
