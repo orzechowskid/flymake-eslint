@@ -226,9 +226,11 @@ argument."
   (when (process-live-p flymake-eslint--process)
     (kill-process flymake-eslint--process))
   (let ((default-directory
-         (if (project-current)
-             (project-root (project-current))
-             default-directory))
+         (or
+          flymake-eslint-project-root
+          (when (project-current)
+            (project-root (project-current)))
+          default-directory))
         (format-args
          (if (flymake-eslint--use-json-p)
              '("--format" "json")
