@@ -26,7 +26,8 @@
 ;;;; Requirements
 
 (require 'cl-lib)
-(require 'project)
+(when (featurep 'project)
+  (require 'project))
 (when (featurep 'json)
   (require 'json))
 
@@ -228,7 +229,8 @@ argument."
   (let ((default-directory
          (or
           flymake-eslint-project-root
-          (when (project-current)
+          (when (and (featurep 'project)
+                     (project-current))
             (project-root (project-current)))
           default-directory))
         (format-args
