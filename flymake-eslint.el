@@ -1,6 +1,6 @@
 ;;; flymake-eslint.el --- A Flymake backend for Javascript using eslint  -*- lexical-binding: t; -*-
 
-;; Version: 1.6.0
+;; Version: 1.7.0
 ;; Author: Dan Orzechowski
 ;; Contributor: Terje Larsen
 ;; URL: https://github.com/orzechowskid/flymake-eslint
@@ -26,7 +26,8 @@
 ;;;; Requirements
 
 (require 'cl-lib)
-(require 'project)
+(when (featurep 'project)
+  (require 'project))
 (when (featurep 'json)
   (require 'json))
 
@@ -226,9 +227,12 @@ argument."
   (when (process-live-p flymake-eslint--process)
     (kill-process flymake-eslint--process))
   (let ((default-directory
-         (if (project-current)
-             (project-root (project-current))
-             default-directory))
+         (or
+          flymake-eslint-project-root
+          (when (and (featurep 'project)
+                     (project-current))
+            (project-root (project-current)))
+          default-directory))
         (format-args
          (if (flymake-eslint--use-json-p)
              '("--format" "json")
