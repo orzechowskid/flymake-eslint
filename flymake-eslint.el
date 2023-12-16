@@ -38,15 +38,17 @@
   :group 'programming
   :prefix "flymake-eslint-")
 
-(defcustom flymake-eslint-executable-name "eslint"
-  "Name of executable to run when checker is called.
-Must be present in variable `exec-path'."
-  :type 'string
-  :group 'flymake-eslint)
-
-(defcustom flymake-eslint-executable-args nil
-  "Extra arguments to pass to eslint."
-  :type '(choice string (repeat string))
+(defcustom flymake-eslint-executable '("eslint")
+  "Arguments to execute `eslint'
+  Example values:
+    '(\"eslint\") ; to use an eslint available in exec-ptah
+    '(\"npx\" \"eslint\") ; to use eslint through npx. Allows access to project-local eslint
+    '(\"npm\" \"exec\" \"--\" \"eslint\") ; equivalent to \"npx\"
+  
+  You can also send additional arguments to eslint. For example to set eslint's --max-warnings to 13:
+    '(\"eslint\" \"--max-warnings\" \"13\")
+    '(\"npx\" \"eslint\" \"--max-warnings\" \"13\")"
+  :type '(repeat string)
   :group 'flymake-eslint)
 
 (defcustom flymake-eslint-show-rule-name t
@@ -100,31 +102,28 @@ installation with JSON support."
   "Enable Flymake and flymake-eslint.
 Add this function to some js major mode hook."
   (interactive)
+  (make-local-variable 'flymake-eslint-project-root)
+  (setq default-directory
+	(or flymake-eslint-project-root
+	    (when (and (featurep 'project)
+		       (project-current))
+	      (project-root (project-current)))
+	    default-directory))
   (unless flymake-eslint-defer-binary-check
     (flymake-eslint--ensure-binary-exists))
-  (make-local-variable 'flymake-eslint-project-root)
   (flymake-mode t)
   (add-hook 'flymake-diagnostic-functions 'flymake-eslint--checker nil t))
 
 ;;;;; Private
 
-(defun flymake-eslint--executable-args ()
-  "Get additional arguments for `flymake-eslint-executable-name'.
-Return `flymake-eslint-executable-args' value and ensure that
-this is a list."
-  (if (listp flymake-eslint-executable-args)
-      flymake-eslint-executable-args
-    (list flymake-eslint-executable-args)))
-
 (defun flymake-eslint--ensure-binary-exists ()
-  "Ensure that `flymake-eslint-executable-name' exists.
+  "Ensure that `flymake-eslint-executable' exists and can be invoked with `--version'
 Otherwise, throw an error and tell Flymake to disable this
-backend if `flymake-eslint-executable-name' can't be found in
-variable `exec-path'"
-  (unless (executable-find flymake-eslint-executable-name)
-    (let ((option 'flymake-eslint-executable-name))
-      (error "Can't find \"%s\" in exec-path - try to configure `%s'"
-             (symbol-value option) option))))
+backend."
+  (with-temp-buffer
+    (let ((x flymake-eslint-executable))
+      (unless (= 0 (apply 'call-process `(,(car x) nil t (current-buffer) ,@(cdr x) "--version")))
+	(error "`eslint' invocation failed. It errored with message: %s" (buffer-string))))))
 
 (defun flymake-eslint--get-position (line column buffer)
   "Get the position at LINE and COLUMN for BUFFER."
@@ -226,14 +225,7 @@ CALLBACK accepts a buffer containing stdout from linter as its
 argument."
   (when (process-live-p flymake-eslint--process)
     (kill-process flymake-eslint--process))
-  (let ((default-directory
-         (or
-          flymake-eslint-project-root
-          (when (and (featurep 'project)
-                     (project-current))
-            (project-root (project-current)))
-          default-directory))
-        (format-args
+  (let ((format-args
          (if (flymake-eslint--use-json-p)
              '("--format" "json")
            "")))
@@ -243,14 +235,13 @@ argument."
            :connection-type 'pipe
            :noquery t
            :buffer (generate-new-buffer " *flymake-eslint*")
-           :command `(,flymake-eslint-executable-name
+           :command `(,@flymake-eslint-executable
                       "--no-color"
                       "--no-ignore"
                       ,@format-args
                       "--stdin"
                       "--stdin-filename"
-                      ,(buffer-file-name source-buffer)
-                      ,@(flymake-eslint--executable-args))
+                      ,(buffer-file-name source-buffer))
            :sentinel
            (lambda (proc &rest ignored)
              (let ((status (process-status proc))

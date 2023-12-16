@@ -5,7 +5,8 @@ Flymake backend for Javascript using eslint
 
 ## Installation
 
-0. Make sure `eslint` is installed and present on your emacs `exec-path`.  For Linux systems `exec-path` usually equals your `$PATH` environment variable; for other systems, you're on your own.
+0. Make sure `eslint` is present on your `exec-path`. If you want to use an `eslint` local to your project (through `npx`) you must configure (see _Customization_ below) `flymake-eslint-executable` variable to `'("npx" "eslint")`.
+    For Linux systems `exec-path` usually equals your `$PATH` environment variable; for other systems, you're on your own.
 1. Install:
   - from MELPA: `M-x package-install [RET] flymake-eslint [RET]`
   - manually: download and place inside `~/.emacs.d/lisp` then edit `~/.emacs` or equivalent:
@@ -24,13 +25,16 @@ Flymake backend for Javascript using eslint
 useful variables are members of the `flymake-eslint` group and can be viewed and modified with the command `M-x customize-group [RET] flymake-eslint [RET]`.
 
 ```lisp
-(defcustom flymake-eslint-executable-name "eslint"
-  "Name of executable to run when checker is called.  Must be present in variable `exec-path'."
-  :type 'string
-  :group 'flymake-eslint)
-
-(defcustom flymake-eslint-executable-args nil
-  "Extra arguments to pass to eslint."
+(defcustom flymake-eslint-executable '("eslint")
+  "Name and arguments to call eslint with.
+  Examples:
+    '(\"eslint\") ; if eslint exists and available in exec-path
+    '(\"npx" "eslint\") ; if eslint is called through npx. Allows access to project-local eslint
+    '(\"npm\" \"exec\" \"--\" \"eslint\") ; equivalent to \"npx\"
+  
+  You can also send additional arguments to eslint. For example to set eslint's --max-warnings to 13:
+    '(\"eslint\" \"--max-warnings\" \"13\")
+    '(\"npx\" \"eslint\" \"--max-warnings\" \"13\")"
   :type 'string
   :group 'flymake-eslint)
 
@@ -65,7 +69,9 @@ yes
 
 ## See Also
 
-[flymake-stylelint](https://github.com/orzechowskid/flymake-stylelint)
+* [flymake-stylelint](https://github.com/orzechowskid/flymake-stylelint)
+* [npx](https://docs.npmjs.com/cli/v7/commands/npx)
+* [eslint CLI](https://eslint.org/docs/latest/use/command-line-interface)
 
 ## License
 
