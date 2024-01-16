@@ -249,7 +249,7 @@ argument."
                       ,@format-args
                       "--stdin"
                       "--stdin-filename"
-                      ,(buffer-file-name source-buffer)
+                      ,(or (buffer-file-name source-buffer) (buffer-name source-buffer))
                       ,@(flymake-eslint--executable-args))
            :sentinel
            (lambda (proc &rest ignored)
