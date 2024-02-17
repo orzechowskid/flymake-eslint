@@ -168,7 +168,7 @@ The diagnostics are reported against SOURCE-BUFFER."
   (if (featurep 'json)
       (with-current-buffer eslint-stdout-buffer
         (goto-char (point-min))
-        (let* ((full-diagnostics (json-parse-buffer))
+        (let* ((full-diagnostics (flymake-eslint--json-parse-buffer))
                (eslint-diags (gethash "messages"(elt full-diagnostics 0))))
           (seq-map
            (lambda (diag)
@@ -176,6 +176,38 @@ The diagnostics are reported against SOURCE-BUFFER."
            eslint-diags)))
     (error
      "Tried to parse JSON diagnostics but current Emacs does not support it.")))
+
+(defun flymake-eslint--json-parse-buffer ()
+  "Return eslint diagnostics in the current buffer.
+
+The current buffer is expected to contain a JSON output of
+diagnostics messages written by eslint.
+
+The return value is a list containing a single element: a hash
+table of eslint execution results.
+
+When eslint crashes, the current buffer may contain non-JSON
+output. In this case, the function returns the same kind of data
+but the only contained error consists of information about the
+crash."
+  (condition-case nil
+      (json-parse-buffer)
+    (json-parse-error (flymake-eslint--generate-fake-diagnostics-from-non-json-output))))
+
+(defun flymake-eslint--generate-fake-diagnostics-from-non-json-output ()
+  "Return a diagnostic list containing the reason for eslint's crash."
+  (let ((eslint-message (make-hash-table :test 'equal)))
+    (puthash "line" 1 eslint-message)
+    (puthash "column" 1 eslint-message)
+    (puthash "ruleId" "eslint" eslint-message)
+    (puthash "severity" 2 eslint-message)
+    (puthash "message"
+             (buffer-substring-no-properties (point-min) (point-max))
+             eslint-message)
+    (let ((eslint-messages (list eslint-message))
+          (result (make-hash-table :test 'equal)))
+      (puthash "messages" eslint-messages result)
+      (list result))))
 
 (defun flymake-eslint--use-json-p ()
   "Check if eslint diagnostics should be requested to be formatted as JSON."
