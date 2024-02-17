@@ -85,7 +85,7 @@ installation with JSON support."
   (rx bol (* space) (group (+ num)) ":" (group (+ num)) ; line:col
       (+ space) (group (or "error" "warning"))          ; type
       (+ space) (group (+? any))                        ; message
-      (>= 2 space) (group (* any)) eol)                 ; rule name
+      (>= 2 space) (group (* not-newline)) eol)         ; rule name
   "Regexp to match eslint messages.")
 
 (defvar-local flymake-eslint--process nil
