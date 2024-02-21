@@ -241,7 +241,7 @@ argument."
                       ,@format-args
                       "--stdin"
                       "--stdin-filename"
-                      ,(buffer-file-name source-buffer))
+                      ,(or (buffer-file-name source-buffer) (buffer-name source-buffer)))
            :sentinel
            (lambda (proc &rest ignored)
              (let ((status (process-status proc))
