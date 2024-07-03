@@ -79,6 +79,20 @@ installation with JSON support."
   :type 'boolean
   :group 'flymake-eslint)
 
+(defcustom flymake-eslint-project-markers
+  '("eslint.config.js" "eslint.config.mjs" "eslint.config.cjs" "package.json")
+  "List of files indicating the root of a JavaScript project.
+
+flymake-eslint starts ESLint at the root of your JavaScript
+project. This root is defined as the first directory containing a file
+of this list, starting from the value of `default-directory' in the
+current buffer.
+
+Adding a \".eslintrc.js\" entry (or another supported extension) to this
+list only makes sense if there is at most one such file per project."
+  :type '(repeat string)
+  :group 'flymake-eslint)
+
 ;;;; Variables
 
 (defvar flymake-eslint--message-regexp
@@ -261,6 +275,7 @@ argument."
   (let ((default-directory
          (or
           flymake-eslint-project-root
+          (flymake-eslint--directory-containing-project-marker)
           (when (and (featurep 'project)
                      (project-current))
             (project-root (project-current)))
@@ -298,6 +313,19 @@ argument."
                ;; destroy temp buffer when done or killed
                (when (memq status '(exit signal))
                  (kill-buffer buffer))))))))
+
+(defun flymake-eslint--directory-containing-project-marker ()
+  "Return the directory containing a project marker.
+
+Return the first directory containing a file of `flymake-eslint-project-markers',
+starting from the value of `default-directory' in the current buffer."
+  (locate-dominating-file
+   default-directory
+   (lambda (directory)
+     (seq-find
+      (lambda (project-marker)
+        (file-exists-p (expand-file-name project-marker directory)))
+      flymake-eslint-project-markers))))
 
 (defun flymake-eslint--check-and-report (source-buffer report-fn)
   "Run eslint against SOURCE-BUFFER.
