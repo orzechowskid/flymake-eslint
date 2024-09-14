@@ -336,15 +336,18 @@ Use REPORT-FN to report results."
          (if (flymake-eslint--use-json-p)
              'flymake-eslint--report-json
            'flymake-eslint--report)))
-    (flymake-eslint--create-process
-     source-buffer
-     (lambda (eslint-stdout)
-       (funcall
-        report-fn
-        (funcall diag-builder-fn eslint-stdout source-buffer))))
-    (with-current-buffer source-buffer
-      (process-send-string flymake-eslint--process (buffer-string))
-      (process-send-eof flymake-eslint--process))))
+    (let ((content (buffer-string)))
+      (if (string-empty-p content)
+          (funcall report-fn (list))
+        (flymake-eslint--create-process
+         source-buffer
+         (lambda (eslint-stdout)
+           (funcall
+            report-fn
+            (funcall diag-builder-fn eslint-stdout source-buffer))))
+        (with-current-buffer source-buffer
+          (process-send-string flymake-eslint--process (buffer-string))
+          (process-send-eof flymake-eslint--process))))))
 
 (defun flymake-eslint--checker (report-fn &rest _ignored)
   "Run eslint on the current buffer.
