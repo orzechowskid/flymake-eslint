@@ -31,6 +31,8 @@
 (when (featurep 'json)
   (require 'json))
 
+(require 'tramp)
+
 ;;;; Customization
 
 (defgroup flymake-eslint nil
@@ -135,7 +137,7 @@ this is a list."
 Otherwise, throw an error and tell Flymake to disable this
 backend if `flymake-eslint-executable-name' can't be found in
 variable `exec-path'"
-  (unless (executable-find flymake-eslint-executable-name)
+  (unless (executable-find flymake-eslint-executable-name t)
     (let ((option 'flymake-eslint-executable-name))
       (error "Can't find \"%s\" in exec-path - try to configure `%s'"
              (symbol-value option) option))))
@@ -283,10 +285,15 @@ argument."
         (format-args
          (if (flymake-eslint--use-json-p)
              '("--format" "json")
-           "")))
+           ""))
+        (file-name (let ((file-name (buffer-file-name source-buffer)))
+                     (if (file-remote-p file-name)
+                         (tramp-file-name-localname (tramp-dissect-file-name file-name))
+                       file-name))))
     (setq flymake-eslint--process
           (make-process
            :name "flymake-eslint"
+           :file-handler t
            :connection-type 'pipe
            :noquery t
            :buffer (generate-new-buffer " *flymake-eslint*")
@@ -296,7 +303,7 @@ argument."
                       ,@format-args
                       "--stdin"
                       "--stdin-filename"
-                      ,(or (buffer-file-name source-buffer) (buffer-name source-buffer))
+                      ,(or file-name (buffer-name source-buffer))
                       ,@(flymake-eslint--executable-args))
            :sentinel
            (lambda (proc &rest ignored)
