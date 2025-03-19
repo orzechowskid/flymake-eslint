@@ -13,6 +13,11 @@ Flymake backend for Javascript using eslint
   (add-to-list 'load-path "~/.emacs.d/lisp")
   (require "flymake-eslint.el")
   ```
+  - with `use-package` + `straight.el`:
+  ```lisp
+  (use-package flymake-eslint
+    :straight '(flymake-eslint :type git :host github :repo "orzechowskid/flymake-eslint"))
+  ```
 2. Enable:
 ```lisp
 (add-hook 'web-mode-hook ; or whatever the mode-hook is for your mode of choice
