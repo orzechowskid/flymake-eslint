@@ -1,3 +1,7 @@
+# Deprecated
+
+this package is no longer under active development.  Please check out [flymake-jsts](https://github.com/orzechowskid/flymake-jsts) as an alternative; it's much more solidly built and easier for end-users to customize.
+
 # flymake-eslint
 Flymake backend for Javascript using eslint
 
